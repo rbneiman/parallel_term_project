@@ -12,7 +12,18 @@ include_directories(src)
 
 add_executable(parallel_term_project
     src/main.cpp
-    src/gpu/algo_test.cu
     src/testcase.cpp
+
+    src/cpu/bitonicsort.cpp
+    src/cpu/bricksort.cpp
+    src/cpu/mergesort.cpp
+    src/cpu/quicksort.cpp
+    src/cpu/radixsort.cpp
+
+    src/gpu/bitonicsort.cpp
+    src/gpu/bricksort.cpp
+    src/gpu/mergesort.cpp
+    src/gpu/quicksort.cpp
+    src/gpu/radixsort.cpp
 )
 

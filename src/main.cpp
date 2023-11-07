@@ -1,14 +1,11 @@
-#include "gpu/algo_test.cuh"
 #include "distributions.h"
 
 using value_type = double;
 using dist_fptr = distributions::dist_gen_fptr_t<value_type>;
 
 int main(){
-    run_algo();
-
     dist_fptr distributions[] = {
-            distributions::shuffled_random(),
+        distributions::shuffled_random(),
         distributions::all_equal(),
         distributions::ascending(),
         distributions::descending(),
