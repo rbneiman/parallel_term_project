@@ -17,10 +17,10 @@ namespace cpu_sort{
 
         std::vector<ValueType> out(arr.size());
         auto fut = threadPool.queueTask([&arr, &out, &threadPool]{
-            mergeSortHelper(arr.begin(), arr.end(), out.begin(), out.end(), threadPool);
+            mergeSortHelper(arr.begin(), arr.end()-1, out.begin(), out.end()-1, out.begin(), threadPool);
         });
-        std::this_thread::sleep_for(std::chrono::seconds(2));
-        fut.wait();
+        threadPool.waitUntilDone();
+
 
         threadPool.stop();
         arr = std::move(out);
@@ -28,8 +28,18 @@ namespace cpu_sort{
 
     template<class RandomIterator>
     void mergeSortHelper(RandomIterator low, RandomIterator high, RandomIterator outLow, RandomIterator outHigh,
+                         RandomIterator orig,
                          ThreadPool& threadPool){
-        if(high <= low){
+        bool res = high < low;
+        size_t t = outLow - orig;
+        size_t t2 = outHigh - orig;
+        if(high < low){
+            return;
+        }else if(high == low){
+            std::cout << "Out size: " + std::to_string(outHigh - outLow)
+                         + " ind:" + std::to_string(outLow - orig)
+                         + " val: " + std::to_string(*low) + "\n";
+            *outLow = *low;
             return;
         }
 
@@ -38,26 +48,26 @@ namespace cpu_sort{
         RandomIterator outMid = outLow + diff;
 
         std::shared_ptr<std::atomic_int> onDone(new std::atomic_int(0));
-        threadPool.queueTask([low, high, mid, outLow, outHigh, outMid, &threadPool, onDone]{
-            mergeSortHelper(low, mid, outLow, outMid, threadPool);
+        threadPool.queueTask([low, high, mid, outLow, outHigh, outMid, &threadPool, onDone, orig]{
+            mergeSortHelper(low, mid, outLow, outMid, orig, threadPool);
             int val = onDone->fetch_add(1);
             if(val == 1){
-                parallelMerge(low, mid, mid+1, high, outLow, outHigh, threadPool);
+                parallelMerge(low, mid, mid+1, high, outLow, outHigh,  orig,threadPool);
             }
         });
 
 
-        mergeSortHelper(mid + 1, high, outMid + 1, outHigh, threadPool);
+        mergeSortHelper(mid + 1, high, outMid + 1, outHigh,  orig, threadPool);
         int val = onDone->fetch_add(1);
         if(val == 1){
-            parallelMerge(low, mid, mid+1, high, outLow, outHigh, threadPool);
+            parallelMerge(low, mid, mid+1, high, outLow, outHigh, orig, threadPool);
         }
     }
 
     template<class RandomIterator>
     void parallelMerge(RandomIterator first1, RandomIterator last1,
                        RandomIterator first2, RandomIterator last2,
-                       RandomIterator outLow, RandomIterator outHigh, ThreadPool& threadPool){
+                       RandomIterator outLow, RandomIterator outHigh, RandomIterator orig, ThreadPool& threadPool){
 
         size_t diff1 = last1 - first1;
         size_t diff2 = last2 - first2;
@@ -74,15 +84,17 @@ namespace cpu_sort{
         RandomIterator mid = first1 + ((last1 - first1)/2);
         RandomIterator searchInd = std::lower_bound(first2, last2, *mid);
         RandomIterator outInd = outLow + (mid - first1) + (searchInd - first2);
-        std::cout << "Swap: " + std::to_string(*outInd) + " <-> " + std::to_string(*mid) + "\n";
+        std::cout << "Out size: " + std::to_string(outHigh - outLow)
+        + " ind:" + std::to_string(outInd - orig)
+        + " val: " + std::to_string(*mid) + "\n";
         *outInd = *mid;
 
 
-        auto fut = threadPool.queueTask([first1, mid, first2, searchInd, outLow, outInd, &threadPool]{
-            parallelMerge(first1, mid, first2, searchInd, outLow, outInd, threadPool);
+        auto fut = threadPool.queueTask([first1, mid, first2, searchInd, outLow, outInd, &threadPool, orig]{
+            parallelMerge(first1, mid, first2, searchInd, outLow, outInd,  orig,threadPool);
         });
 
-        parallelMerge(mid+1, last1, searchInd, last2, outInd+1, outHigh, threadPool);
+        parallelMerge(mid+1, last1, searchInd, last2, outInd+1, outHigh, orig, threadPool);
     }
 }
 

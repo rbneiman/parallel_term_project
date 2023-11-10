@@ -4,11 +4,13 @@ ThreadPool::~ThreadPool() {
     this->stop();
 }
 
-void ThreadPool::start(unsigned numThreads) {
+void ThreadPool::start(int numThreads) {
     if(numThreads == 0){
         return;
     }
+
     stopped = false;
+    numWaiting.store(numThreads);
     for(unsigned i=0; i<numThreads; ++i){
         threads.emplace_back(&ThreadPool::threadLoop, this);
     }
@@ -22,12 +24,21 @@ void ThreadPool::stop() {
         }
         stopped = true;
     }
-    queueMutexCondVar.notify_all();
+    queueMutexTaskCond.notify_all();
 
     for(std::thread& thread : threads){
         thread.join();
     }
     threads.clear();
+}
+
+void ThreadPool::waitUntilDone() {
+    {
+        std::unique_lock<std::mutex> lock(queueMutex);
+        queueMutexNumCond.wait(lock, [this] {
+            return taskQueue.empty() && numWaiting == threads.size();
+        });
+    }
 }
 
 std::future<void> ThreadPool::queueTask(const std::function<void()> &task) {
@@ -37,7 +48,7 @@ std::future<void> ThreadPool::queueTask(const std::function<void()> &task) {
         std::unique_lock<std::mutex> lock(queueMutex);
         taskQueue.push(std::move(packaged));
     }
-    queueMutexCondVar.notify_one();
+    queueMutexTaskCond.notify_one();
     return out;
 }
 
@@ -46,9 +57,10 @@ void ThreadPool::threadLoop() {
         std::packaged_task<void()> currentTask;
         {
             std::unique_lock<std::mutex> lock(queueMutex);
-            queueMutexCondVar.wait(lock, [this]{
+            queueMutexTaskCond.wait(lock, [this]{
                 return !taskQueue.empty() || stopped;
             });
+            --numWaiting;
 
             if(stopped){
                 return;
@@ -56,6 +68,11 @@ void ThreadPool::threadLoop() {
             currentTask = std::move(taskQueue.front());
             taskQueue.pop();
         }
+
         currentTask();
+        ++numWaiting;
+        queueMutexNumCond.notify_one();
     }
 }
+
+

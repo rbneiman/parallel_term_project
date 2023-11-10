@@ -11,8 +11,9 @@
 class ThreadPool{
 public:
     ~ThreadPool();
-    void start(unsigned numThreads);
+    void start(int numThreads);
     void stop();
+    void waitUntilDone();
 
     std::future<void> queueTask(const std::function<void()>& task);
 
@@ -20,9 +21,11 @@ private:
     void threadLoop();
 
     bool stopped = true;
+    std::atomic_int numWaiting{0};
     std::queue<std::packaged_task<void()>> taskQueue;
     std::mutex queueMutex;
-    std::condition_variable queueMutexCondVar;
+    std::condition_variable queueMutexTaskCond;
+    std::condition_variable queueMutexNumCond;
     std::vector<std::thread> threads;
 };
 
