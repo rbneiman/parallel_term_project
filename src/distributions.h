@@ -28,8 +28,8 @@ namespace distributions{
     };
 
 
-    struct shuffled_random: distribution_base<shuffled_random>{
-        static constexpr const char* name = "shuffled_random";
+    struct shuffled_ascending: distribution_base<shuffled_ascending>{
+        static constexpr const char* name = "shuffled_ascending";
 
         template<typename ItemType>
         std::vector<ItemType> operator()(size_t size) const{

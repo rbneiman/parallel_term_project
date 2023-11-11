@@ -1,13 +1,14 @@
 #include "distributions.h"
+#include "sorting.h"
 #include <iostream>
-#include "cpu/mergesort.h"
+
 
 using value_t = double;
 using dist_fptr = distributions::dist_gen_fptr_t<value_t>;
 
 int main(){
     dist_fptr distributions[] = {
-        distributions::shuffled_random(),
+        distributions::shuffled_ascending(),
         distributions::shuffled_similar(),
         distributions::all_equal(),
         distributions::ascending(),
@@ -18,16 +19,25 @@ int main(){
             4, 8, 16, 64, 128
     };
 
-    for(size_t size : sizes){
-        std::cout << "Size: " << size << '\n';
-        for(dist_fptr dist: distributions){
-            std::vector<value_t> items = dist(size);
-            std::vector<value_t> items_copy(items);
+    distributions::seed_prng(0);
 
-            cpu_sort::mergeSort(items_copy, 1);
-            std::cout << std::flush;
+    size_t arrSize = 1 << 14;
+    for(int i=0; i<1; ++i){
+        std::cout << "Size: " << arrSize << '\n';
+        auto t1 = std::chrono::high_resolution_clock::now();
+        for(dist_fptr dist: distributions){
+
+
+            std::vector<value_t> items = dist(arrSize);
+            testSorting(items, 2);
+
+
             int j = 0;
         }
+        auto t2 = std::chrono::high_resolution_clock::now();
+        auto milis = std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count();
+        std::cout << milis << "ms" << '\n';
+        arrSize *= 2;
     }
 
 
