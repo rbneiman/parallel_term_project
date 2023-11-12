@@ -14,7 +14,7 @@ namespace cpu_sort{
     template<class RandomIterator>
     void parallelMerge(RandomIterator first1, RandomIterator last1,
                        RandomIterator first2, RandomIterator last2,
-                       RandomIterator outLow, RandomIterator outHigh, RandomIterator orig){
+                       RandomIterator outLow, RandomIterator outHigh){
         ssize_t diff1 = last1 - first1;
         ssize_t diff2 = last2 - first2;
         if(diff2 > diff1){
@@ -27,29 +27,23 @@ namespace cpu_sort{
             return;
         }
 
-        if(diff1 < 511){
+        if(diff1 < 512){
             std::merge(first1, last1, first2, last2, outLow);
             return;
         }
-        size_t midInd = ((last1 - first1)/2);
         RandomIterator mid1 = first1 + ((last1 - first1)/2);
         RandomIterator search2 = std::lower_bound(first2, last2, *mid1);
         RandomIterator outInd = outLow + (mid1 - first1) + (search2 - first2);
-        size_t midOff = mid1 - first1;
-        size_t ind = search2 - first2;
-//        std::cout << "M Out: " + std::to_string(outLow - orig) + " - " + std::to_string(outHigh - orig - 1)
-//                     + " ind:" + std::to_string(outInd - orig)
-//                     + " val: " + std::to_string(*mid1) + "\n" << std::endl;
         *outInd = *mid1;
 
 
-        #pragma omp task default(none) firstprivate(first1, mid1, first2, search2, outLow, outInd, orig)
+        #pragma omp task default(none) firstprivate(first1, mid1, first2, search2, outLow, outInd)
         {
-            parallelMerge(first1, mid1, first2, search2, outLow, outInd, orig);
+            parallelMerge(first1, mid1, first2, search2, outLow, outInd);
         }
 
 
-        parallelMerge(mid1+1, last1, search2, last2, outInd+1, outHigh, orig);
+        parallelMerge(mid1+1, last1, search2, last2, outInd+1, outHigh);
 
         #pragma omp taskwait
         {
@@ -58,35 +52,21 @@ namespace cpu_sort{
     }
 
     template<class RandomIterator>
-    void mergeSortHelper(RandomIterator low, RandomIterator high, RandomIterator outLow, RandomIterator outHigh,
-                         RandomIterator outOrig, RandomIterator orig, int layer, int layerSize){
-//        std::cout << "D Layer: " + std::to_string(layer) + " Ind: " + std::to_string(low - orig)
-//              + " - " + std::to_string(high - orig) << std::endl;
-
+    void mergeSortHelper(RandomIterator low, RandomIterator high, RandomIterator outLow, RandomIterator outHigh, size_t layerSize){
 
         size_t inSize = high - low;
-        size_t outLowInd = outLow - outOrig;
-        size_t outHighInd = outHigh - outOrig;
         if(high < low){
             return;
         }else if(high == low){
-//            std::cout << "L Out size: " + std::to_string(outHigh - outLow + 1)
-//                         + " ind:" + std::to_string(outLow - outOrig)
-//                         + " val: " + std::to_string(*low) + "\n";
-//            std::cout << std::endl;
             *outLow = *low;
             return;
         }
 //
-//        if(inSize<512){
-//            size_t arrSize = high - low;
-//            size_t outSize = outHigh - outLow;
-//            int j=0;
-//            auto out = std::copy(low, high+1, outLow);
-//            size_t copied = out - outLow;
-//            std::sort(outLow, outHigh);
-//            return;
-//        }
+        if(inSize<512){
+            std::copy(low, high+1, outLow);
+            std::sort(outLow, outHigh + 1);
+            return;
+        }
 
         size_t diff = (high - low) / 2;
         size_t outOffset = (high - low) + 1;
@@ -96,16 +76,15 @@ namespace cpu_sort{
         RandomIterator outMidOffset = outLow+diff+layerSize;
         RandomIterator outHighOffset = outHigh+layerSize;
 
-
-        #pragma omp task default(none) firstprivate(low, mid, outLowOffset, outMidOffset, outOrig, orig, layer, outOffset, layerSize)
+        #pragma omp task default(none) firstprivate(low, mid, outLowOffset, outMidOffset, outOffset, layerSize)
         {
-            mergeSortHelper(low, mid, outLowOffset, outMidOffset, outOrig, orig, layer + 1, layerSize);
+            mergeSortHelper(low, mid, outLowOffset, outMidOffset, layerSize);
         }
 
-        mergeSortHelper(mid + 1, high, outMidOffset+1, outHighOffset, outOrig, orig, layer+1, layerSize);
+        mergeSortHelper(mid + 1, high, outMidOffset+1, outHighOffset, layerSize);
 
         #pragma omp taskwait
-        parallelMerge(outLowOffset, outMidOffset+1, outMidOffset+1, outHighOffset+1, outLow, outHigh + 1, outOrig);
+        parallelMerge(outLowOffset, outMidOffset+1, outMidOffset+1, outHighOffset+1, outLow, outHigh + 1);
     }
 
     static size_t test(size_t n){
@@ -119,12 +98,13 @@ namespace cpu_sort{
         test(1);
         size_t size = (std::log2(arr.size()) + 1) * arr.size();
         std::vector<ValueType> out(size , -1);
-        #pragma omp parallel default(none) shared(arr, out)
+        #pragma omp parallel sections default(none) shared(arr, out)
         {
+            #pragma omp section
             mergeSortHelper(arr.begin(), arr.end() - 1,
                             out.begin(), out.begin() + arr.size() - 1,
-                            out.begin(), arr.begin(), 0, arr.size());
-        };
+                            arr.size());
+        }
         out.resize(arr.size());
         arr = std::move(out);
     }

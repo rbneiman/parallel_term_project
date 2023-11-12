@@ -7,13 +7,13 @@ using value_t = double;
 using dist_fptr = distributions::dist_gen_fptr_t<value_t>;
 
 int main(){
-    dist_fptr distributions[] = {
-        distributions::shuffled_ascending(),
-        distributions::shuffled_similar(),
-        distributions::all_equal(),
-        distributions::ascending(),
-        distributions::descending(),
-        distributions::swapped_endpoints()
+    std::pair<std::string, dist_fptr> distributions[] = {
+        {"shuffled_ascending",distributions::shuffled_ascending()},
+//        {"shuffled_similar",distributions::shuffled_similar()},
+//        {"all_equal",distributions::all_equal()},
+//        {"ascending",distributions::ascending()},
+//        {"descending",distributions::descending()},
+//        {"swapped_endpoints",distributions::swapped_endpoints()}
     };
     size_t sizes[] = {
             4, 8, 16, 64, 128
@@ -21,22 +21,26 @@ int main(){
 
     distributions::seed_prng(0);
 
-    size_t arrSize = 1 << 14;
+    size_t arrSize = 1l << 15;
+//    size_t arrSize = 1l << 24;
     for(int i=0; i<1; ++i){
         std::cout << "Size: " << arrSize << '\n';
-        auto t1 = std::chrono::high_resolution_clock::now();
-        for(dist_fptr dist: distributions){
 
+        for(const auto& distPair: distributions){
+            const std::string& distName = distPair.first;
+            auto dist = distPair.second;
+
+            std::cout << distName << '\n';
 
             std::vector<value_t> items = dist(arrSize);
-            testSorting(items, 2);
+            testSorting(items, 16);
 
 
             int j = 0;
         }
-        auto t2 = std::chrono::high_resolution_clock::now();
-        auto milis = std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count();
-        std::cout << milis << "ms" << '\n';
+
+
+
         arrSize *= 2;
     }
 
