@@ -61,7 +61,7 @@ namespace cpu_sort{
             *outLow = *low;
             return;
         }
-//
+
         if(inSize<512){
             std::copy(low, high+1, outLow);
             std::sort(outLow, outHigh + 1);
@@ -87,15 +87,11 @@ namespace cpu_sort{
         parallelMerge(outLowOffset, outMidOffset+1, outMidOffset+1, outHighOffset+1, outLow, outHigh + 1);
     }
 
-    static size_t test(size_t n){
-        return (std::log2(n) + 1) * n;
-    }
 
     template<typename ValueType>
     void mergeSort(std::vector<ValueType>& arr, int numThreads){
         omp_set_num_threads(numThreads);
 
-        test(1);
         size_t size = (std::log2(arr.size()) + 1) * arr.size();
         std::vector<ValueType> out(size , -1);
         #pragma omp parallel sections default(none) shared(arr, out)

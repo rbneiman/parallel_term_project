@@ -38,7 +38,7 @@ namespace cpu_sort{
     }
 
     template<class RandomIterator>
-    void bitonicSortHelper(RandomIterator low, RandomIterator high,  bool isAscending){
+    void bitonicSortHelperRecursive(RandomIterator low, RandomIterator high,  bool isAscending){
         size_t len = high - low;
 
         if(len<512){
@@ -55,24 +55,70 @@ namespace cpu_sort{
 
             #pragma omp task default(none) firstprivate(low, m)
             {
-                bitonicSortHelper(low, low + m, true);
+                bitonicSortHelperRecursive(low, low + m, true);
             }
-            bitonicSortHelper(low + m, high, false);
+            bitonicSortHelperRecursive(low + m, high, false);
 
             #pragma omp taskwait
             parallelBitonicMerge(low, high, isAscending);
         }
     }
 
+    template<class RandomIterator>
+    void bitonicSortHelper(RandomIterator low, RandomIterator high){
+        size_t len = high - low;
+
+        size_t numItersSort = len / 512;
+
+        #pragma omp parallel loop  default(none) firstprivate(low, len, numItersSort)
+        for(size_t i=0; i<numItersSort; ++i){
+            bool isAscending = (i&0x1) == 0;
+
+            RandomIterator lowInd = low + (i * 512);
+            RandomIterator highInd = lowInd + 512;
+
+            if(isAscending){
+                std::sort(lowInd, highInd);
+            }else{
+                std::sort(lowInd, highInd, std::greater<>{});
+            }
+        }
+
+
+        for(size_t i=1024; i<=len; i<<=1){
+            size_t numIters = len / i;
+
+            #pragma omp parallel loop  default(none) firstprivate(low, len, i, numIters)
+            for(int j=0; j<numIters; ++j){
+                bool isAscending = (j&0x1) == 0;
+
+                RandomIterator lowInd = low + (j * i);
+                RandomIterator highInd = lowInd + i;
+
+                parallelBitonicMerge(lowInd, highInd, isAscending);
+            }
+
+        }
+    }
+
     template<typename ValueType>
-    void bitonicSort(std::vector<ValueType>& arr, int numThreads){
+    void bitonicSortRecursive(std::vector<ValueType>& arr, int numThreads){
         omp_set_num_threads(numThreads);
 
         #pragma omp parallel sections default(none) shared(arr)
         {
-            #pragma omp section
-            bitonicSortHelper(arr.begin(), arr.end(), true);
+            #pragma omp task default(none) shared(arr)
+            bitonicSortHelperRecursive(arr.begin(), arr.end(), true);
         }
+        int j = 0;
+    }
+
+    template<typename ValueType>
+    void bitonicSort(std::vector<ValueType>& arr, int numThreads){
+        omp_set_num_threads(numThreads);
+
+
+        bitonicSortHelper(arr.begin(), arr.end());
         int j = 0;
     }
 }

@@ -21,7 +21,7 @@ int main(){
 
     distributions::seed_prng(0);
 
-    size_t arrSize = 1l << 15;
+    size_t arrSize = 1l << 3;
 //    size_t arrSize = 1l << 24;
     for(int i=0; i<1; ++i){
         std::cout << "Size: " << arrSize << '\n';
