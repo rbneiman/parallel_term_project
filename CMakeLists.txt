@@ -1,11 +1,14 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.16)
 
 if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
     set(CMAKE_CUDA_ARCHITECTURES 52)
 endif()
 
+project(parallel_term_project)
 
-if(WIN32)
+message(STATUS "Compiler ID: " ${CMAKE_CXX_COMPILER_ID})
+if(WIN32 OR APPLE)
+
     if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
         set(LANGS C CXX CUDA)
         set(CUDA_ENABLED "TRUE")
