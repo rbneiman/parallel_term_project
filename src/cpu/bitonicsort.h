@@ -70,6 +70,11 @@ namespace cpu_sort{
 
         size_t numItersSort = len / 512;
 
+        if(len < 512){
+            std::sort(low, high);
+            return;
+        }
+
         #pragma omp parallel loop  default(none) firstprivate(low, len, numItersSort)
         for(size_t i=0; i<numItersSort; ++i){
             bool isAscending = (i&0x1) == 0;

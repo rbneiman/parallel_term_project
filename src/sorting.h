@@ -39,8 +39,8 @@ void testCPUSorting(std::vector<ValueType>& items, int numThreads){
     }
 
     std::pair<std::string, cpu_sort_fn<ValueType>> sortFuncs[] = {
-//        {"bitonic_sort", cpu_sort::bitonicSort},
-//        {"bitonic_sort_recursive", cpu_sort::bitonicSortRecursive},
+        {"bitonic_sort", cpu_sort::bitonicSort},
+        {"bitonic_sort_recursive", cpu_sort::bitonicSortRecursive},
         {"merge_sort", cpu_sort::mergeSort},
         {"quick_sort", cpu_sort::quickSort}
     };
@@ -77,15 +77,25 @@ void testCPUSorting(std::vector<ValueType>& items, int numThreads){
 #endif
 
 #ifdef CUDA_ENABLED
-#include "gpu/bitonicsort.h"
-#include "gpu/bricksort.h"
-#include "gpu/mergesort.h"
-#include "gpu/quicksort.h"
-#include "gpu/radixsort.h"
+#include "gpu/bitonicsort.cuh"
 
 template<typename ValueType>
-void testGPUSorting(std::vector<ValueType>& arr){
+void testGPUSorting(std::vector<ValueType>& items){
 
+
+    std::cout << "bitonic_sort_gpu" << '\n';
+
+
+    std::vector<ValueType> items_copy(items);
+    auto t1 = std::chrono::high_resolution_clock::now();
+    gpu_sort::bitonicSort(items_copy);
+    auto t2 = std::chrono::high_resolution_clock::now();
+    auto milis = std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count();
+    std::cout << std::to_string(milis) + " ms, " << std::endl;
+
+    if(!verify(items_copy)){
+        std::cerr << "bad sort " << std::endl;
+    }
 }
 
 #endif

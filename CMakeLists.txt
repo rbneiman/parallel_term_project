@@ -32,11 +32,7 @@ if(CUDA_ENABLED)
     message(STATUS "CUDA Enabled.")
     add_compile_definitions(CUDA_ENABLED)
     SET(SOURCES ${SOURCES}
-            src/gpu/bitonicsort.cpp
-            src/gpu/bricksort.cpp
-            src/gpu/mergesort.cpp
-            src/gpu/quicksort.cpp
-            src/gpu/radixsort.cpp
+            src/gpu/bitonicsort.cu
     )
 endif ()
 

@@ -9,11 +9,11 @@ using dist_fptr = distributions::dist_gen_fptr_t<value_t>;
 int main(){
     std::pair<std::string, dist_fptr> distributions[] = {
         {"shuffled_ascending",distributions::shuffled_ascending()},
-//        {"shuffled_similar",distributions::shuffled_similar()},
-//        {"all_equal",distributions::all_equal()},
-//        {"ascending",distributions::ascending()},
-//        {"descending",distributions::descending()},
-//        {"swapped_endpoints",distributions::swapped_endpoints()}
+        {"shuffled_similar",distributions::shuffled_similar()},
+        {"all_equal",distributions::all_equal()},
+        {"ascending",distributions::ascending()},
+        {"descending",distributions::descending()},
+        {"swapped_endpoints",distributions::swapped_endpoints()}
     };
     size_t sizes[] = {
             4, 8, 16, 64, 128
@@ -21,9 +21,10 @@ int main(){
 
     distributions::seed_prng(0);
 
-    size_t arrSize = 1l << 3;
+
 //    size_t arrSize = 1l << 24;
-    for(int i=0; i<1; ++i){
+    for(int i=6; i<20; ++i){
+        size_t arrSize = 1l << i;
         std::cout << "Size: " << arrSize << '\n';
 
         for(const auto& distPair: distributions){
