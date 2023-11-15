@@ -41,7 +41,7 @@ void testCPUSorting(std::vector<ValueType>& items, int numThreads){
     std::pair<std::string, cpu_sort_fn<ValueType>> sortFuncs[] = {
 //        {"bitonic_sort", cpu_sort::bitonicSort},
 //        {"bitonic_sort_recursive", cpu_sort::bitonicSortRecursive},
-//        {"merge_sort", cpu_sort::mergeSort},
+        {"merge_sort", cpu_sort::mergeSort},
         {"quick_sort", cpu_sort::quickSort}
     };
 

@@ -20,16 +20,21 @@ namespace cpu_sort{
 
     template<typename RandomIterator>
     std::tuple<RandomIterator, RandomIterator> quickSortPartition(RandomIterator pivot, RandomIterator low, RandomIterator high){
+        auto p_val = *pivot;
         RandomIterator k = high;
 
         RandomIterator p = low;
         RandomIterator q = low;
         while(q < k){
-            if(*q < *pivot){
+//            size_t pivotInd = pivot - low;
+//            size_t pInd = p - low;
+//            size_t qInd = q - low;
+//            size_t kInd = k - low;
+            if(*q < p_val){
                 std::iter_swap(p,q);
                 p += 1;
                 q += 1;
-            }else if(*q > *pivot){
+            }else if(*q > p_val){
                 k -= 1;
                 std::iter_swap(q,k);
             }else{
@@ -48,10 +53,6 @@ namespace cpu_sort{
 
         RandomIterator pivot = quickSortChoosePivot(low, high);
         auto [p,q] = quickSortPartition(pivot, low, high);
-
-        size_t pivotInd = pivot - low;
-        size_t pInd = p - low;
-        size_t qInd = q - low;
 
         #pragma omp task default(none) firstprivate(low, p)
         quickSortHelper(low, p);
