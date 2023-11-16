@@ -35,13 +35,13 @@ namespace cpu_sort {
         for (int i = 1; i < max; i++)
             count[i] += count[i - 1];
 
-        // Place the elements in sorted order
+        // put the elements in sorted order
         for (int i = size - 1; i >= 0; i--) {
             output[count[(array[i] / place) % 10] - 1] = array[i];
             count[(array[i] / place) % 10]--;
         }
 
-        // Copy the output array back to the original array
+        // output -> original
         #pragma omp parallel for
         for (int i = 0; i < size; i++)
             array[i] = output[i];
@@ -49,10 +49,9 @@ namespace cpu_sort {
 
     template<typename ValueType>
     void radixsort(ValueType array[], int size) {
-        // Get maximum element
         ValueType max = getMax(array, size);
 
-        // Apply counting sort to sort elements based on place value.
+        // use counting sort to sort elements based on place value.
         for (int place = 1; max / place > 0; place *= 10)
             countingSort(array, size, place);
     }
