@@ -81,12 +81,27 @@ namespace cpu_sort{
             mergeSortHelper(low, mid, outLowOffset, outMidOffset, layerSize);
         }
 
+        #pragma omp task default(none) firstprivate(mid, high, outMidOffset, outHighOffset, outOffset, layerSize)
         mergeSortHelper(mid + 1, high, outMidOffset+1, outHighOffset, layerSize);
 
         #pragma omp taskwait
         parallelMerge(outLowOffset, outMidOffset+1, outMidOffset+1, outHighOffset+1, outLow, outHigh + 1);
     }
-
+//
+//    template<class RandomIterator>
+//    void mergeSortTest(RandomIterator low, RandomIterator high, RandomIterator outLow, RandomIterator outHigh){
+//
+//        size_t diff = (high - low) / 2;
+//        RandomIterator mid = low + diff;
+//        #pragma omp task default(none)  firstprivate(low, mid)
+//        std::sort(low, mid);
+//
+//        #pragma omp task default(none)  firstprivate(low, mid)
+//        std::sort(mid+1, high);
+//
+//        #pragma omp taskwait
+//        std::merge(low, mid, mid+1, high, outLow,)
+//    }
 
     template<typename ValueType>
     void mergeSort(std::vector<ValueType>& arr, int numThreads){

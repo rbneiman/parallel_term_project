@@ -18,7 +18,7 @@ if(WIN32 OR APPLE)
     endif ()
 else()
     set(LANGS C CXX CUDA)
-    set(CUDA_ENABLED "TRUE")
+#    set(CUDA_ENABLED "TRUE")
     set(OPENMP_ENABLED "TRUE")
 endif ()
 
@@ -45,7 +45,6 @@ if(OPENMP_ENABLED)
             src/cpu/mergesort.cpp
             src/cpu/quicksort.cpp
             src/cpu/radixsort.cpp
-            src/cpu/threadPool.cpp
     )
 endif ()
 

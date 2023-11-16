@@ -28,27 +28,35 @@ using cpu_sort_fn = void(*)(std::vector<ValueType>&, int);
 template<typename ValueType>
 void testCPUSorting(std::vector<ValueType>& items, int numThreads){
 
-    std::cout << "std_sort" << '\n';
+    std::cout << "{\"name\": \"std_sort\", ";
     {
         std::vector<ValueType> items_copy(items);
         auto t1 = std::chrono::high_resolution_clock::now();
         std::sort(items_copy.begin(), items_copy.end());
         auto t2 = std::chrono::high_resolution_clock::now();
-        auto milis = std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count();
-        std::cout << milis << " ms" << std::endl;
+        auto micros = std::chrono::duration_cast<std::chrono::microseconds>(t2-t1).count();
+        std::cout << "\"times\": [" << micros << "]";
+//        std::cout << "\"times\": [\"0\": " << milis << "]";
     }
+    std::cout << "}";
 
-    std::pair<std::string, cpu_sort_fn<ValueType>> sortFuncs[] = {
-        {"bitonic_sort", cpu_sort::bitonicSort},
-        {"bitonic_sort_recursive", cpu_sort::bitonicSortRecursive},
-        {"merge_sort", cpu_sort::mergeSort},
-        {"quick_sort", cpu_sort::quickSort}
+    std::tuple<std::string, cpu_sort_fn<ValueType>, size_t> sortFuncs[] = {
+        {"bitonic_sort", cpu_sort::bitonicSort, (1 << 18)},
+        {"bitonic_sort_recursive", cpu_sort::bitonicSortRecursive, (1 << 18)},
+        {"merge_sort", cpu_sort::mergeSort, (1 << 24)},
+        {"quick_sort", cpu_sort::quickSort, (1 << 16)},
+        {"brick_sort", cpu_sort::brickSort, (1 << 16)}
     };
 
     for(auto sortFuncPair: sortFuncs){
-        std::string& name = sortFuncPair.first;
-        auto sortFunc = sortFuncPair.second;
-        std::cout << name << '\n';
+        size_t limit = std::get<2>(sortFuncPair);
+        if(limit < items.size()){
+            continue;
+        }
+        std::cout << ",\n{";
+        std::string& name = std::get<0>(sortFuncPair);
+        auto sortFunc = std::get<1>(sortFuncPair);
+        std::cout << "\"name\": \"" << name << "\", \"times\": [";
 
         std::stringstream times{};
         for(int i = 1; i<=numThreads; ++ i){
@@ -57,15 +65,15 @@ void testCPUSorting(std::vector<ValueType>& items, int numThreads){
             auto t1 = std::chrono::high_resolution_clock::now();
             sortFunc(items_copy, i);
             auto t2 = std::chrono::high_resolution_clock::now();
-            auto milis = std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count();
+            auto micros = std::chrono::duration_cast<std::chrono::microseconds >(t2-t1).count();
 
-            times << std::to_string(i) ;
-            times << ": " << std::to_string(milis) + " ms, ";
-            if(!verify(items_copy)){
-                std::cerr << "bad sort: " + std::to_string(i) << std::endl;
-            }
+//            times <<"\"" << std::to_string(i) << "\"" << ": " <<;
+            times << std::to_string(micros) << ", ";
+//            if(!verify(items_copy)){
+//                std::cerr << "bad sort: " + std::to_string(i) << std::endl;
+//            }
         }
-        std::cout << times.str() << std::endl;
+        std::cout << times.str() << "]}";
 
 
 
@@ -109,7 +117,7 @@ void testSorting(std::vector<ValueType>& items, int numThreads){
 #endif
 
 #ifdef CUDA_ENABLED
-    testGPUSorting(items);
+//    testGPUSorting(items);
 #endif
 
 }
