@@ -2,60 +2,61 @@
 #define PARALLEL_TERM_PROJECT_RADIXSORT_H
 
 #include <algorithm>
-#include <vector>
+#include <iostream>
 #include <omp.h>
 
 namespace cpu_sort {
 
     template<typename ValueType>
-    void parallelRadixSort(std::vector<ValueType>& arr) {
-        const int numDigits = 10; // For decimal system
-        int maxVal = *std::max_element(arr.begin(), arr.end());
-
-        std::vector<std::vector<int>> count(omp_get_max_threads(), std::vector<int>(numDigits));
-        std::vector<ValueType> temp(arr.size());
-
-        for (int exp = 1; maxVal/exp > 0; exp *= 10) {
-            for (auto &c : count) {
-                std::fill(c.begin(), c.end(), 0);
-            }
-
-            // Parallel Counting
-            #pragma omp parallel
-            {
-                int threadNum = omp_get_thread_num();
-                #pragma omp for
-                for (size_t i = 0; i < arr.size(); i++) {
-                    int digit = (arr[i] / exp) % numDigits;
-                    count[threadNum][digit]++;
-                }
-            }
-
-            // parallelize prefix sum calc 
-            for (int digit = 0; digit < numDigits; digit++) {
-                int sum = 0;
-                #pragma omp parallel for reduction(+:sum)
-                for (int t = 0; t < omp_get_max_threads(); t++) {
-                    int tmp = count[t][digit];
-                    count[t][digit] = sum;
-                    sum += tmp;
-                }
-            }
-
-            // parallel reordering???
-            #pragma omp parallel for
-            for (int t = 0; t < omp_get_max_threads(); t++) {
-                for (size_t i = 0; i < arr.size(); i++) {
-                    if (i/omp_get_max_threads() == t) {
-                        int digit = (arr[i] / exp) % numDigits;
-                        temp[count[t][digit]++] = arr[i];
-                    }
-                }
-            }
-
-            arr = temp;
+    ValueType getMax(ValueType array[], int n) {
+        ValueType max = array[0];
+        #pragma omp parallel for reduction(max:max)
+        for (int i = 1; i < n; i++) {
+            if (array[i] > max)
+                max = array[i];
         }
+        return max;
     }
-}
+
+    template<typename ValueType>
+    void countingSort(ValueType array[], int size, int place) {
+        const int max = 10;
+        ValueType output[size];
+        int count[max] = {0};
+
+        // Calculate count of elements
+        #pragma omp parallel for
+        for (int i = 0; i < size; i++) {
+            #pragma omp atomic
+            count[(array[i] / place) % 10]++;
+        }
+
+        // Calculate cumulative count
+        for (int i = 1; i < max; i++)
+            count[i] += count[i - 1];
+
+        // Place the elements in sorted order
+        for (int i = size - 1; i >= 0; i--) {
+            output[count[(array[i] / place) % 10] - 1] = array[i];
+            count[(array[i] / place) % 10]--;
+        }
+
+        // Copy the output array back to the original array
+        #pragma omp parallel for
+        for (int i = 0; i < size; i++)
+            array[i] = output[i];
+    }
+
+    template<typename ValueType>
+    void radixsort(ValueType array[], int size) {
+        // Get maximum element
+        ValueType max = getMax(array, size);
+
+        // Apply counting sort to sort elements based on place value.
+        for (int place = 1; max / place > 0; place *= 10)
+            countingSort(array, size, place);
+    }
+
+} 
 
 #endif //PARALLEL_TERM_PROJECT_RADIXSORT_H
