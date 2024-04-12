@@ -43,7 +43,7 @@ if(OPENMP_ENABLED)
             src/cpu/bitonicsort.cpp
             src/cpu/bricksort.cpp
             src/cpu/mergesort.cpp
-            src/cpu/quicksort.cpp
+            # src/cpu/quicksort.cpp
             src/cpu/radixsort.cpp
     )
 endif ()
@@ -51,18 +51,23 @@ endif ()
 project(parallel_term_project LANGUAGES ${LANGS})
 FIND_PACKAGE( OpenMP)
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-include_directories(src)
+include(json)
+include(ips4o)
 
 add_executable(parallel_term_project
     ${SOURCES}
 )
 
+target_include_directories(parallel_term_project PRIVATE src)
+target_link_libraries(parallel_term_project PRIVATE nlohmann_json::nlohmann_json ips4o)
+
 if(OPENMP_ENABLED)
     FIND_PACKAGE( OpenMP)
     if(OPENMP_FOUND)
         message(STATUS "OpenMP found.")
-        target_link_libraries(parallel_term_project PUBLIC OpenMP::OpenMP_CXX)
+        target_link_libraries(parallel_term_project PRIVATE OpenMP::OpenMP_CXX)
     else()
         message(FATAL_ERROR, "OpenMP enabled but not found.")
     endif()
