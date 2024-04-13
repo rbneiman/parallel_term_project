@@ -6,18 +6,17 @@ endif()
 
 project(parallel_term_project)
 
+set(LANGS C CXX)
 message(STATUS "Compiler ID: " ${CMAKE_CXX_COMPILER_ID})
 if(WIN32 OR APPLE)
 
     if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
-        set(LANGS C CXX CUDA)
         set(CUDA_ENABLED "TRUE")
     else()
-        set(LANGS C CXX)
         set(OPENMP_ENABLED "TRUE")
     endif ()
 else()
-    set(LANGS C CXX CUDA)
+    set(LANGS C CXX)
 #    set(CUDA_ENABLED "TRUE")
     set(OPENMP_ENABLED "TRUE")
 endif ()
@@ -34,6 +33,7 @@ if(CUDA_ENABLED)
     SET(SOURCES ${SOURCES}
             src/gpu/bitonicsort.cu
     )
+    SET(LANGS ${LANGS} CUDA)
 endif ()
 
 if(OPENMP_ENABLED)
@@ -43,7 +43,7 @@ if(OPENMP_ENABLED)
             src/cpu/bitonicsort.cpp
             src/cpu/bricksort.cpp
             src/cpu/mergesort.cpp
-            # src/cpu/quicksort.cpp
+            src/cpu/quicksort.cpp
             src/cpu/radixsort.cpp
     )
 endif ()
